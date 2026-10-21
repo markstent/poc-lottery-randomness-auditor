@@ -24,3 +24,10 @@ data/processed/*
 
 # macOS
 .DS_Store
+
+# Isolated workspaces and agent scratch
+.worktrees/
+.superpowers/
+
+# Marimo session state
+notebooks/__marimo__/
