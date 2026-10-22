@@ -32,15 +32,23 @@ def weighted_draws(
     n_draws: int,
     rng: np.random.Generator,
 ) -> np.ndarray:
-    """Draw boards with balls sampled without replacement proportional to weights."""
+    """Draw boards sampled without replacement proportional to non-negative weights."""
     _validate_era(era)
     weights = np.asarray(weights, dtype=float)
     if weights.shape != (era.pool_size,):
         raise ValueError(f"{era.name}: weights must have shape ({era.pool_size},)")
-    if not np.isfinite(weights).all() or (weights <= 0).any():
-        raise ValueError(f"{era.name}: weights must be positive and finite")
+    if not np.isfinite(weights).all() or (weights < 0).any():
+        raise ValueError(f"{era.name}: weights must be non-negative and finite")
+    if np.count_nonzero(weights > 0) < era.picks:
+        raise ValueError(f"{era.name}: at least {era.picks} weights must be positive")
     uniforms = rng.random((n_draws, era.pool_size))
-    keys = uniforms ** (1.0 / weights)
+    inverse = np.divide(
+        1.0,
+        weights,
+        out=np.full_like(weights, np.inf),
+        where=weights > 0,
+    )
+    keys = uniforms**inverse
     return _sorted_sample(np.argpartition(keys, -era.picks, axis=1), era.picks)
 
 
