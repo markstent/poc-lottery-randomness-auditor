@@ -23,6 +23,9 @@ poc-lottery-randomness-auditor = "poc_lottery_randomness_auditor:main"
 requires = ["uv_build>=0.12.23,<0.13.0"]
 build-backend = "uv_build"
 
+[tool.ruff]
+exclude = ["docs/superpowers/plans/**"]
+
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",

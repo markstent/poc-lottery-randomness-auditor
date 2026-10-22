@@ -52,3 +52,10 @@ Ask before:
 - Destructive operations.
 - Deployment or infrastructure changes.
 - Paid external services.
+
+## Project: lottery randomness auditor
+- Purpose: audit the pinned UK Lotto draw snapshot for detectable deviations from fairness.
+- Key commands: `uv run pytest`, `uv run ruff check .`, `bash scripts/verify_repro.sh`, and `uv run poc-lottery-randomness-auditor --snapshot data/snapshots/lotto --out reports`.
+- Notebook: `notebooks/lotto_audit.py` (Marimo). It is linted with per-file ignores for reactive cell patterns.
+- Design and plan: `docs/data-sources.md` and `docs/superpowers/plans/2026-10-21-lotto-randomness-auditor.md`.
+- PDF output needs WeasyPrint system libraries (Pango/GObject); HTML output does not.

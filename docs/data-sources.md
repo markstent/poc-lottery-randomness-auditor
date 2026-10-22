@@ -20,6 +20,6 @@ Decision: use Kaggle `lohi.csv` as the primary source for draws up to 2026-05-02
 
 Reconciliation result on 2026-10-21: overlap draws 3166, 3167 and 3168 matched exactly for date, round, the six main numbers and bonus after normalising machine whitespace and writing numeric ball sets as `L<n>`. One ID mismatch remains documented: draw 3168 has Kaggle machine `Lancelot` and official machine `Lotto6`. The snapshot keeps the primary Kaggle row for draws up to 2026-05-02; machine IDs before era 3 are not used for the era 3 machine homogeneity checks, and the official recent rows carry the current `LottoN` labels from 2026-05-06 onward.
 
-Snapshot written by `scripts/fetch_data.py` on 2026-10-21: `data/snapshots/lotto/draws.csv`, 3256 rows, draws 1 to 3217, dates 1994-11-19 to 2026-10-21, sha256 `f75080537ca6bfe750b5db254fb60b577ff61798ce2a6b55a986d1dc4fce6f91`.
+Snapshot written by `scripts/fetch_data.py` on 2026-10-21: `data/snapshots/lotto/draws.csv`, 3256 rows, draws 1 to 3217, dates 1994-11-19 to 2026-10-21, sha256 `f75080537ca6bfe750b5db254fb60b577ff61798ce2a6b55a986d1dc4fce6f91`. Era row counts: era-49 2065, era-59 1113, era-59-two-round 78.
 
 Independent spot check: lottery.co.uk archive pages (`https://www.lottery.co.uk/lotto/results/archive-YYYY`) agree with the winning numbers shown for sampled 1994, 2026 era 2 and 2026 era 3 dates, but they are HTML year pages and do not expose machine or ball-set IDs, so they are not the primary source.
