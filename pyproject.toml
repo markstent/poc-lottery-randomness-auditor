@@ -6,11 +6,14 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "altair>=6.3.0",
+    "jinja2>=3.1.6",
     "marimo[mcp]>=0.25.2",
     "matplotlib>=3.11.2",
     "numpy>=2.5.4",
     "pandas>=3.0.6",
     "scipy>=1.18.1",
+    "vl-convert-python>=1.9.0.post1",
+    "weasyprint>=70.0",
 ]
 
 [project.scripts]

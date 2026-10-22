@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ meta.title }}</title>
+  <style>
+    body { font-family: Helvetica, Arial, sans-serif; margin: 2rem; color: #222; }
+    h1 { font-size: 1.8rem; margin-bottom: 0.2rem; }
+    h2 { margin-top: 2rem; border-top: 1px solid #ccc; padding-top: 1rem; }
+    h3 { margin-bottom: 0.3rem; }
+    .meta, .limitations { color: #555; font-size: 0.95rem; }
+    .chart { margin: 0.8rem 0; }
+    .verdict { font-weight: 700; }
+  </style>
+</head>
+<body>
+  <h1>{{ meta.title }}</h1>
+  <p class="meta">
+    Generated {{ generated_at }} · Snapshot SHA256 {{ meta.snapshot_sha256 }} ·
+    {{ meta.n_draws }} draws across {{ meta.n_eras }} eras.
+  </p>
+
+  {% for era in eras %}
+  <section>
+    <h2>{{ era.name }}</h2>
+    <p class="verdict">{{ era.headline }}</p>
+    {% for family in era.families %}
+    <section>
+      <h3>{{ family.title }}</h3>
+      <div class="chart">{{ family.svg | safe }}</div>
+      <p>{{ family.intuition }}</p>
+      <p>{{ family.verdict }} {{ family.chance }}</p>
+    </section>
+    {% endfor %}
+  </section>
+  {% endfor %}
+
+  <section>
+    <h2>Power analysis</h2>
+    {% if power_svg %}
+    <div class="chart">{{ power_svg | safe }}</div>
+    {% else %}
+    <p>No power-analysis grid was supplied.</p>
+    {% endif %}
+    <p>This shows how often the planted test biases were detected, so a quiet report is meaningful only where the tests are powerful.</p>
+  </section>
+
+  <section class="limitations">
+    <h2>Limitations</h2>
+    <p>This audit tests the recorded draw data, not the physical machine. A pass means these checks found no convincing deviation in this snapshot; it is not a guarantee of future fairness.</p>
+  </section>
+</body>
+</html>
