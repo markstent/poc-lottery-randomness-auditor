@@ -71,6 +71,14 @@ def runs_test(
     null_z = np.empty(replicates, dtype=float)
     for index in range(replicates):
         _, null_z[index] = runs_z(rng.permutation(values))
+    n_one = int(values.sum())
+    n_zero = int(values.size - n_one)
+    expected_runs = (
+        1.0 + 2.0 * n_one * n_zero / values.size
+        if n_one and n_zero
+        else float(observed_runs)
+    )
+    trace = 1 + np.concatenate(([0], np.cumsum(values[1:] != values[:-1])))
     return TestResult(
         family="runs",
         era=era,
@@ -78,5 +86,11 @@ def runs_test(
         statistic=float(observed_runs),
         p_value=mc_p_value(abs(observed_z), np.abs(null_z)),
         method="permutation two-sided runs",
-        details={"z": observed_z, "n_runs": observed_runs, "replicates": replicates},
+        details={
+            "z": observed_z,
+            "n_runs": observed_runs,
+            "expected_runs": expected_runs,
+            "trace": trace.astype(int).tolist(),
+            "replicates": replicates,
+        },
     )
