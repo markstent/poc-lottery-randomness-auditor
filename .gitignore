@@ -31,3 +31,6 @@ data/processed/*
 
 # Marimo session state
 notebooks/__marimo__/
+
+# Generated audit reports
+reports/

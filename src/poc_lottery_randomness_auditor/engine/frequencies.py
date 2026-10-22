@@ -69,7 +69,25 @@ def homogeneity_test(
     """Test whether two count vectors for one era come from one distribution."""
     counts_a = _validate_counts(counts_a, era.pool_size, "counts_a")
     counts_b = _validate_counts(counts_b, era.pool_size, "counts_b")
-    result = scipy.stats.chi2_contingency(np.vstack([counts_a, counts_b]))
+    observed = counts_a + counts_b > 0
+    if observed.sum() < 2:
+        return TestResult(
+            family="homogeneity",
+            era=era.name,
+            subject=subject,
+            statistic=0.0,
+            p_value=1.0,
+            method="chi-square homogeneity",
+            details={
+                "counts_a": counts_a.tolist(),
+                "counts_b": counts_b.tolist(),
+                "dof": 0,
+                "dropped": int((~observed).sum()),
+            },
+        )
+    result = scipy.stats.chi2_contingency(
+        np.vstack([counts_a[observed], counts_b[observed]])
+    )
     return TestResult(
         family="homogeneity",
         era=era.name,
@@ -81,5 +99,6 @@ def homogeneity_test(
             "counts_a": counts_a.tolist(),
             "counts_b": counts_b.tolist(),
             "dof": int(result.dof),
+            "dropped": int((~observed).sum()),
         },
     )

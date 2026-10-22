@@ -81,3 +81,15 @@ def test_homogeneity_identical_counts():
     assert result.p_value == pytest.approx(1.0)
     assert result.era == "era-59"
     assert result.subject == "main"
+
+
+def test_homogeneity_drops_unseen_categories():
+    counts_a = np.zeros(59, dtype=int)
+    counts_a[[0, 1]] = [10, 5]
+    counts_b = np.zeros(59, dtype=int)
+    counts_b[[0, 2]] = [8, 7]
+    result = homogeneity_test(counts_a, counts_b, LOTTO.eras[1], "bonus")
+    reference = scipy.stats.chi2_contingency([[10, 5, 0], [8, 0, 7]])
+    assert result.statistic == pytest.approx(reference.statistic, rel=1e-12)
+    assert result.p_value == pytest.approx(reference.pvalue, rel=1e-12)
+    assert result.details["dof"] == 2
