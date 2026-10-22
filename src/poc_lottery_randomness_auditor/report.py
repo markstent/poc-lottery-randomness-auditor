@@ -37,37 +37,133 @@ _ENV = Environment(
     lstrip_blocks=True,
 )
 
-_INTUITIONS: dict[str, str] = {
-    "frequency": (
-        "This counts how often each ball appeared and compares the counts with "
-        "what a fair machine would produce."
-    ),
-    "pairs": (
-        "This checks whether any two balls appear together far more or far less "
-        "often than chance allows."
-    ),
-    "runs": (
-        "This looks for suspicious streaks or alternation in the sequence of draw sums."
-    ),
-    "serial": (
-        "This checks whether one draw appears to remember anything about the "
-        "previous draws."
-    ),
-    "gaps": (
-        "This compares the waiting time between appearances of each ball with "
-        "the fair waiting-time pattern."
-    ),
-    "order-stats": (
-        "This compares the smallest, largest and spread of each draw with the "
-        "fair reference curves."
-    ),
-    "spectral": (
-        "This looks for hidden cycles in the appearances of individual balls."
-    ),
-    "bayesian": (
-        "This estimates each ball's probability directly and asks whether the "
-        "estimate sits inside the fair band."
-    ),
+_FAMILY_NOTES: dict[str, dict[str, str]] = {
+    "frequency": {
+        "shows": (
+            "Each bar is one ball. It compares how often the ball was drawn with "
+            "the even share expected under a fair machine."
+        ),
+        "fair": (
+            "Bars should sit close to the expected line. Some balls land above it "
+            "and some below it; with this many balls, a spread of a few percent "
+            "either way is normal."
+        ),
+        "worry": (
+            "Concern would be one or two balls far outside the everyday scatter, "
+            "especially if the same balls stayed high or low across separate eras."
+        ),
+    },
+    "pairs": {
+        "shows": (
+            "Each point is one pair of balls. It asks whether pairs turn up "
+            "together more often, or less often, than two independent fair draws "
+            "would produce."
+        ),
+        "fair": (
+            "Points should cloud around zero with no pair standing far apart. "
+            "Because hundreds of pairs are checked, a few moderate outliers are "
+            "expected by chance."
+        ),
+        "worry": (
+            "Concern would be the same pair repeatedly far from zero, or a whole "
+            "group of balls whose pairs lean the same way."
+        ),
+    },
+    "runs": {
+        "shows": (
+            "This follows the draw sums in date order and looks for streaks: "
+            "long runs above the typical sum, or too much flipping up and down."
+        ),
+        "fair": (
+            "The sequence should drift above and below the middle without a "
+            "memory. Streaks happen, but their number should match the fair "
+            "reference band."
+        ),
+        "worry": (
+            "Concern would be far fewer streaks than expected, which suggests "
+            "mechanical cycling, or far more, which suggests over-correction."
+        ),
+    },
+    "serial": {
+        "shows": (
+            "This checks whether the numbers in one draw help predict anything "
+            "about the next draw, such as repeated balls or shifted sums."
+        ),
+        "fair": (
+            "Knowing the last draw should be useless. The lag measures should "
+            "sit inside the fair band rather than trend with draw order."
+        ),
+        "worry": (
+            "Concern would be a stable pattern that persists across eras, not a "
+            "single lag that looks odd for a short stretch."
+        ),
+    },
+    "gaps": {
+        "shows": (
+            "For each ball this measures the waiting time between appearances "
+            "and compares the whole waiting-time pattern with the fair pattern."
+        ),
+        "fair": (
+            "Short waits are common and long waits are rare, but long waits must "
+            "still occur sometimes. The fair band should contain most of the "
+            "observed waiting-time curve."
+        ),
+        "worry": (
+            "Concern would be waits that are too regular, or extreme droughts "
+            "and clusters that sit outside the band for several balls at once."
+        ),
+    },
+    "order-stats": {
+        "shows": (
+            "This summarises each draw by its smallest ball, largest ball and "
+            "spread, then compares those summaries with fair reference curves."
+        ),
+        "fair": (
+            "The observed curves should track the reference curves closely. "
+            "Random draws can favour low or high numbers for a while without "
+            "breaking the overall shape."
+        ),
+        "worry": (
+            "Concern would be the curve sitting outside the reference band over "
+            "a broad range, rather than a wiggle at one end."
+        ),
+    },
+    "spectral": {
+        "shows": (
+            "This turns each ball's appearances into a rhythm and checks for "
+            "cycles, such as a ball coming up every Nth draw more often than it "
+            "should."
+        ),
+        "fair": (
+            "No single cycle should dominate. The largest peaks should look "
+            "like the background noise of a fair sequence."
+        ),
+        "worry": (
+            "Concern would be a sharp peak at the same cycle for several balls, "
+            "or a peak that survives when the era is split in half."
+        ),
+    },
+    "bayesian": {
+        "shows": (
+            "Each interval is a direct estimate of one ball's probability. It "
+            "shows the estimate together with the uncertainty left by the "
+            "finite number of draws."
+        ),
+        "fair": (
+            "The intervals should cover or straddle the fair line. Wider "
+            "intervals mean the era is short, not that the lottery failed."
+        ),
+        "worry": (
+            "Concern would be several intervals clearing the same side of the "
+            "fair line, which is much harder to explain than one narrow miss."
+        ),
+    },
+}
+
+_DEFAULT_NOTES = {
+    "shows": "This chart summarises one fairness check.",
+    "fair": "A fair lottery should land inside the reference band most of the time.",
+    "worry": "Concern would be a pattern that repeats across balls or eras.",
 }
 
 
@@ -88,10 +184,36 @@ def chart_svg(chart: alt.Chart) -> str:
 
 def _chance_sentence(result: TestResult) -> str:
     if result.p_value is None:
-        return "This check is summarised with credible intervals rather than a p-value."
-    times = max(1, round(1.0 / result.p_value))
+        return (
+            "This Bayesian check has no single pass/fail line. Read the interval "
+            "against the fair band and the width of the era."
+        )
+    share = result.p_value * 100
+    if result.p_value >= 0.5:
+        plain = (
+            "This is ordinary. If the lottery were fair, results at least this "
+            f"odd would appear in most similar histories (about {share:.0f}%)."
+        )
+    elif result.p_value >= 0.2:
+        plain = (
+            "This is still common. If the lottery were fair, results at least "
+            f"this odd would appear in a substantial minority of similar "
+            f"histories (about {share:.0f}%)."
+        )
+    elif result.p_value >= 0.05:
+        plain = (
+            "This is mildly unusual, but not rare. If the lottery were fair, "
+            f"results at least this odd would appear in about {share:.1f}% of "
+            "similar histories."
+        )
+    else:
+        plain = (
+            "This is rare. If the lottery were fair, results at least this odd "
+            f"would appear in only about {share:.2f}% of similar histories."
+        )
     return (
-        f"A fair lottery would produce a result this extreme about 1 time in {times}."
+        f"{plain} The verdict also allows for the number of checks run, so one "
+        "surprising result on its own is not treated as proof."
     )
 
 
@@ -103,19 +225,28 @@ def _family_sections(battery: BatteryResult) -> list[dict[str, Any]]:
         if chart_function is None:
             continue
         key = f"{result.era}:{result.family}:{result.subject}"
-        if key in rejections:
-            verdict = "Flagged after false-discovery-rate control."
+        notes = _FAMILY_NOTES.get(result.family, _DEFAULT_NOTES)
+        if result.p_value is None:
+            status = "bayesian"
+            verdict = (
+                "Bayesian summary: judge the intervals against the fair band "
+                "rather than a single cut-off."
+            )
+        elif key in rejections:
+            status = "flagged"
+            verdict = "Flagged after allowing for the number of checks."
         else:
-            verdict = "Not flagged after false-discovery-rate control."
+            status = "ordinary"
+            verdict = "Not flagged after allowing for the number of checks."
         sections.append(
             {
                 "era": result.era,
                 "title": f"{result.family.replace('-', ' ').title()} ({result.subject})",
                 "svg": chart_svg(chart_function(result)),
-                "intuition": _INTUITIONS.get(
-                    result.family,
-                    "This chart summarises one fairness check.",
-                ),
+                "shows": notes["shows"],
+                "fair": notes["fair"],
+                "worry": notes["worry"],
+                "status": status,
                 "verdict": verdict,
                 "chance": _chance_sentence(result),
             }
@@ -137,9 +268,12 @@ def _era_sections(battery: BatteryResult) -> list[dict[str, Any]]:
             {
                 "name": era,
                 "headline": (
-                    "This era is flagged for follow-up."
+                    "At least one check needs follow-up. A statistician should "
+                    "inspect the raw draws and machine context before any "
+                    "conclusion."
                     if flagged
-                    else "No convincing departure from fairness survived multiple-comparison control."
+                    else "Nothing here needs follow-up. These checks found the "
+                    "ordinary amount of variation expected from a fair machine."
                 ),
                 "families": [family for family in families if family["era"] == era],
             }

@@ -69,6 +69,48 @@ def _(LOTTO, draws, mo):
 
 
 @app.cell
+def _(draws, mo):
+    overview = (
+        draws.groupby("era", observed=True)
+        .agg(
+            rows=("draw_no", "size"),
+            draws=("draw_no", "nunique"),
+            first_date=("date", "min"),
+            last_date=("date", "max"),
+            rounds=("round", "nunique"),
+            machines=("machine", "nunique"),
+            ball_sets=("ball_set", "nunique"),
+        )
+        .reset_index()
+    )
+    missing = (
+        draws.isna()
+        .sum()
+        .rename("missing")
+        .reset_index()
+        .rename(columns={"index": "column"})
+    )
+    duplicate_rounds = int(draws.duplicated(["draw_no", "round"]).sum())
+    mo.vstack(
+        [
+            mo.md("## EDA for data scientists"),
+            mo.md(
+                "Structure checks before the audit charts: rows per era, date "
+                "coverage, machines and ball sets, missing values, duplicates, "
+                "and the first and last records."
+            ),
+            mo.md(f"Duplicate draw/round rows: {duplicate_rounds}."),
+            mo.ui.table(overview, pagination=False, selection=None),
+            mo.ui.table(missing, pagination=False, selection=None),
+            mo.md("First rows:"),
+            mo.ui.table(draws.head(3), pagination=False, selection=None),
+            mo.md("Last rows:"),
+            mo.ui.table(draws.tail(3), pagination=False, selection=None),
+        ]
+    )
+
+
+@app.cell
 def _(LOTTO, mo):
     era_selector = mo.ui.dropdown(
         options=[era.name for era in LOTTO.eras],
@@ -101,11 +143,23 @@ def _(battery, mo):
             return "Verdict: flagged after false-discovery-rate control."
         if result.p_value is None:
             return "Verdict: Bayesian summary; see the certified-delta chapter."
-        times = max(1, round(1.0 / result.p_value))
-        return (
-            "Verdict: not flagged. A fair lottery would produce something this "
-            f"extreme about 1 time in {times}."
-        )
+        share = result.p_value * 100
+        if result.p_value >= 0.5:
+            plain = (
+                "ordinary; fair lotteries look this odd in most similar "
+                f"histories (about {share:.0f}%)"
+            )
+        elif result.p_value >= 0.05:
+            plain = (
+                "not rare; fair lotteries look this odd in about "
+                f"{share:.1f}% of similar histories"
+            )
+        else:
+            plain = (
+                "rare; fair lotteries look this odd in only about "
+                f"{share:.2f}% of similar histories"
+            )
+        return f"Verdict: not flagged after allowing for the number of checks: {plain}."
 
     mo.md("")
 

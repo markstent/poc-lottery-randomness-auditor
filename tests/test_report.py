@@ -22,7 +22,7 @@ def make_frequency_result() -> TestResult:
         era="era-59-two-round",
         subject="main",
         statistic=1.0,
-        p_value=0.2,
+        p_value=0.8,
         method="test",
         details={"counts": [10, 20, 30], "expected": 20.0},
     )
@@ -70,6 +70,17 @@ def test_render_html_contains_verdicts_and_meta(battery_result, power_df):
     assert make_meta().snapshot_sha256 in html
     assert "era-59-two-round" in html
     assert html.count("<svg") >= 1
+
+
+def test_render_html_plain_english_explanations(battery_result, power_df):
+    html = render_html(battery_result, power_df, make_meta())
+    assert "What this plot shows" in html
+    assert "What fair looks like" in html
+    assert "What would worry me" in html
+    assert "This is ordinary" in html
+    assert "most similar histories" in html
+    assert "allowing for the number of checks" in html
+    assert "1 time in" not in html
 
 
 def test_render_html_deterministic(battery_result, power_df):

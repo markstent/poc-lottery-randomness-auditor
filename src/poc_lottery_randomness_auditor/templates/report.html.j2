@@ -2,52 +2,170 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ meta.title }}</title>
   <style>
-    body { font-family: Helvetica, Arial, sans-serif; margin: 2rem; color: #222; }
-    h1 { font-size: 1.8rem; margin-bottom: 0.2rem; }
-    h2 { margin-top: 2rem; border-top: 1px solid #ccc; padding-top: 1rem; }
-    h3 { margin-bottom: 0.3rem; }
-    .meta, .limitations { color: #555; font-size: 0.95rem; }
-    .chart { margin: 0.8rem 0; }
-    .verdict { font-weight: 700; }
+    :root {
+      --ink: #1f2937;
+      --muted: #5b6472;
+      --line: #d8dee8;
+      --paper: #ffffff;
+      --wash: #f6f8fb;
+      --accent: #1f6feb;
+      --good: #0f766e;
+      --bad: #b42318;
+      --bayes: #7c3aed;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--wash);
+      color: var(--ink);
+      font-family: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.45;
+    }
+    main { max-width: 1040px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+    h1 { font-size: 2rem; margin: 0 0 0.35rem; letter-spacing: -0.02em; }
+    h2 { font-size: 1.35rem; margin: 0 0 0.75rem; }
+    h3 { font-size: 1.1rem; margin: 0; }
+    p { margin: 0.35rem 0; }
+    .meta, .limitations { color: var(--muted); font-size: 0.95rem; }
+    .howto {
+      background: #eef4ff;
+      border: 1px solid #cfdcf7;
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+      margin: 1.2rem 0 2rem;
+    }
+    .era { margin-top: 2.2rem; }
+    .era-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      border-top: 2px solid var(--ink);
+      padding-top: 0.8rem;
+      margin-bottom: 1rem;
+    }
+    .era-head p { color: var(--muted); max-width: 62ch; }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1rem 1.1rem 1.2rem;
+      margin: 1rem 0;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.6rem;
+    }
+    .verdict-chip {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 0.2rem 0.65rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .verdict-chip.ordinary { color: var(--good); background: #e6f4f1; }
+    .verdict-chip.flagged { color: var(--bad); background: #fdecea; }
+    .verdict-chip.bayesian { color: var(--bayes); background: #f1eafe; }
+    .chart { margin: 0.5rem 0 0.9rem; overflow-x: auto; }
+    .chart svg { max-width: 100%; height: auto; }
+    .explain {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.6rem;
+    }
+    .explain div {
+      background: var(--wash);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.7rem 0.75rem;
+    }
+    .explain strong {
+      display: block;
+      color: var(--accent);
+      font-size: 0.86rem;
+      margin-bottom: 0.25rem;
+    }
+    .verdict { border-left: 4px solid var(--line); padding-left: 0.8rem; margin-top: 0.8rem; }
+    .verdict strong { display: block; margin-bottom: 0.2rem; }
+    @media (max-width: 820px) {
+      .explain { grid-template-columns: 1fr; }
+      .era-head, .card-head { align-items: flex-start; flex-direction: column; }
+    }
+    @media print {
+      body { background: #fff; }
+      .card { break-inside: avoid; box-shadow: none; }
+    }
   </style>
 </head>
 <body>
+<main>
   <h1>{{ meta.title }}</h1>
   <p class="meta">
     Generated {{ generated_at }} · Snapshot SHA256 {{ meta.snapshot_sha256 }} ·
     {{ meta.n_draws }} draws across {{ meta.n_eras }} eras.
   </p>
 
+  <section class="howto">
+    <h2>How to read this report</h2>
+    <p>Each check gets one chart and three plain-English notes: what the plot shows, what fair output should look like, and what pattern would worry me. A quiet report means the checks found the ordinary amount of scatter expected once the number of checks is taken into account.</p>
+  </section>
+
   {% for era in eras %}
-  <section>
-    <h2>{{ era.name }}</h2>
-    <p class="verdict">{{ era.headline }}</p>
+  <section class="era">
+    <div class="era-head">
+      <h2>{{ era.name }}</h2>
+      <p>{{ era.headline }}</p>
+    </div>
     {% for family in era.families %}
-    <section>
-      <h3>{{ family.title }}</h3>
+    <article class="card">
+      <div class="card-head">
+        <h3>{{ family.title }}</h3>
+        <span class="verdict-chip {{ family.status }}">{{ family.status }}</span>
+      </div>
       <div class="chart">{{ family.svg | safe }}</div>
-      <p>{{ family.intuition }}</p>
-      <p>{{ family.verdict }} {{ family.chance }}</p>
-    </section>
+      <div class="explain">
+        <div><strong>What this plot shows</strong>{{ family.shows }}</div>
+        <div><strong>What fair looks like</strong>{{ family.fair }}</div>
+        <div><strong>What would worry me</strong>{{ family.worry }}</div>
+      </div>
+      <p class="verdict"><strong>Verdict</strong>{{ family.verdict }} {{ family.chance }}</p>
+    </article>
     {% endfor %}
   </section>
   {% endfor %}
 
-  <section>
-    <h2>Power analysis</h2>
-    {% if power_svg %}
-    <div class="chart">{{ power_svg | safe }}</div>
-    {% else %}
-    <p>No power-analysis grid was supplied.</p>
-    {% endif %}
-    <p>This shows how often the planted test biases were detected, so a quiet report is meaningful only where the tests are powerful.</p>
+  <section class="era">
+    <div class="era-head">
+      <h2>Power analysis</h2>
+      <p>How often the planted test biases were detected, so a quiet report is meaningful only where the checks are powerful.</p>
+    </div>
+    <article class="card">
+      {% if power_svg %}
+      <div class="chart">{{ power_svg | safe }}</div>
+      {% else %}
+      <p>No power-analysis grid was supplied.</p>
+      {% endif %}
+      <div class="explain">
+        <div><strong>What this plot shows</strong>The share of simulated biased lotteries that each check managed to catch.</div>
+        <div><strong>What fair looks like</strong>Detection should rise as the planted bias gets stronger; weak checks can miss subtle bias.</div>
+        <div><strong>What would worry me</strong>A clean real-data result next to a check that cannot detect the bias size we care about.</div>
+      </div>
+    </article>
   </section>
 
   <section class="limitations">
     <h2>Limitations</h2>
     <p>This audit tests the recorded draw data, not the physical machine. A pass means these checks found no convincing deviation in this snapshot; it is not a guarantee of future fairness.</p>
   </section>
+</main>
 </body>
 </html>
