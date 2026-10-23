@@ -8,6 +8,7 @@ import pytest
 from poc_lottery_randomness_auditor.charts import frequency_chart
 from poc_lottery_randomness_auditor.engine.battery import BatteryResult
 from poc_lottery_randomness_auditor.engine.types import TestResult
+from poc_lottery_randomness_auditor.games import LOTTO
 from poc_lottery_randomness_auditor.report import (
     ReportMeta,
     chart_svg,
@@ -77,10 +78,19 @@ def test_render_html_plain_english_explanations(battery_result, power_df):
     assert "What this plot shows" in html
     assert "What fair looks like" in html
     assert "What would worry me" in html
-    assert "This is ordinary" in html
+    assert "No follow-up needed" in html
+    assert "Fair lotteries produce a result at least this odd" in html
     assert "most similar histories" in html
-    assert "allowing for the number of checks" in html
+    assert "number of checks" in html
     assert "1 time in" not in html
+
+
+def test_render_html_includes_era_key(battery_result, power_df):
+    html = render_html(battery_result, power_df, make_meta(), game=LOTTO)
+    assert "Era key" in html
+    assert "era-59" in html
+    assert "59 balls" in html
+    assert "two rounds" in html
 
 
 def test_render_html_deterministic(battery_result, power_df):

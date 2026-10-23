@@ -16,6 +16,7 @@ from vl_convert import vegalite_to_svg
 from poc_lottery_randomness_auditor.charts import CHARTS_BY_FAMILY, power_chart
 from poc_lottery_randomness_auditor.engine.battery import BatteryResult
 from poc_lottery_randomness_auditor.engine.types import TestResult
+from poc_lottery_randomness_auditor.games import GameSpec
 
 
 @dataclass(frozen=True)
@@ -185,35 +186,33 @@ def chart_svg(chart: alt.Chart) -> str:
 def _chance_sentence(result: TestResult) -> str:
     if result.p_value is None:
         return (
-            "This Bayesian check has no single pass/fail line. Read the interval "
-            "against the fair band and the width of the era."
+            "This Bayesian check has no single pass/fail line. Judge the "
+            "interval against the fair band and the length of the era."
         )
     share = result.p_value * 100
     if result.p_value >= 0.5:
-        plain = (
-            "This is ordinary. If the lottery were fair, results at least this "
-            f"odd would appear in most similar histories (about {share:.0f}%)."
+        return (
+            "Fair lotteries produce a result at least this odd in most similar "
+            f"histories (about {share:.0f}%). That is ordinary variation, and "
+            "it stays ordinary once the number of checks is taken into account."
         )
-    elif result.p_value >= 0.2:
-        plain = (
-            "This is still common. If the lottery were fair, results at least "
-            f"this odd would appear in a substantial minority of similar "
-            f"histories (about {share:.0f}%)."
+    if result.p_value >= 0.2:
+        return (
+            "Fair lotteries produce a result at least this odd in a "
+            "substantial minority of similar histories "
+            f"(about {share:.0f}%). It is not rare, and the verdict is "
+            "unchanged after counting the number of checks."
         )
-    elif result.p_value >= 0.05:
-        plain = (
-            "This is mildly unusual, but not rare. If the lottery were fair, "
-            f"results at least this odd would appear in about {share:.1f}% of "
-            "similar histories."
-        )
-    else:
-        plain = (
-            "This is rare. If the lottery were fair, results at least this odd "
-            f"would appear in only about {share:.2f}% of similar histories."
+    if result.p_value >= 0.05:
+        return (
+            "Fair lotteries produce a result at least this odd in about "
+            f"{share:.1f}% of similar histories. That is uncommon, but still "
+            "the sort of result that appears when many checks are run."
         )
     return (
-        f"{plain} The verdict also allows for the number of checks run, so one "
-        "surprising result on its own is not treated as proof."
+        "Fair lotteries produce a result at least this odd in only about "
+        f"{share:.2f}% of similar histories. That is rare, so the "
+        "multiple-check verdict should be read before any conclusion."
     )
 
 
@@ -228,16 +227,13 @@ def _family_sections(battery: BatteryResult) -> list[dict[str, Any]]:
         notes = _FAMILY_NOTES.get(result.family, _DEFAULT_NOTES)
         if result.p_value is None:
             status = "bayesian"
-            verdict = (
-                "Bayesian summary: judge the intervals against the fair band "
-                "rather than a single cut-off."
-            )
+            verdict = "Read the certified band rather than a pass/fail line."
         elif key in rejections:
             status = "flagged"
-            verdict = "Flagged after allowing for the number of checks."
+            verdict = "Needs follow-up."
         else:
             status = "ordinary"
-            verdict = "Not flagged after allowing for the number of checks."
+            verdict = "No follow-up needed."
         sections.append(
             {
                 "era": result.era,
@@ -281,13 +277,46 @@ def _era_sections(battery: BatteryResult) -> list[dict[str, Any]]:
     return sections
 
 
-def render_html(battery: BatteryResult, power: pd.DataFrame, meta: ReportMeta) -> str:
+def _era_key(game: GameSpec | None) -> list[dict[str, str]]:
+    if game is None:
+        return []
+    rows = []
+    for era in game.eras:
+        end = era.end.isoformat() if era.end else "ongoing"
+        rounds = (
+            "one round"
+            if era.rounds_per_draw == 1
+            else "two rounds"
+            if era.rounds_per_draw == 2
+            else f"{era.rounds_per_draw} rounds"
+        )
+        bonus = "with a bonus ball" if era.has_bonus else "no bonus ball"
+        rows.append(
+            {
+                "name": era.name,
+                "dates": f"{era.start.isoformat()} to {end}",
+                "rules": (
+                    f"{era.pool_size} balls, pick {era.picks}, {bonus}, "
+                    f"{rounds} per draw"
+                ),
+            }
+        )
+    return rows
+
+
+def render_html(
+    battery: BatteryResult,
+    power: pd.DataFrame,
+    meta: ReportMeta,
+    game: GameSpec | None = None,
+) -> str:
     """Render the full audit report as a deterministic HTML string."""
     template = _ENV.get_template("report.html.j2")
     power_svg = "" if power.empty else chart_svg(power_chart(power))
     return template.render(
         meta=meta,
         generated_at=meta.generated_at.isoformat(),
+        era_key=_era_key(game),
         eras=_era_sections(battery),
         power_svg=power_svg,
     )

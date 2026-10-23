@@ -52,7 +52,7 @@ def run(
         n_draws=len(draws),
         n_eras=int(draws["era"].nunique()),
     )
-    html = render_html(battery, power, meta)
+    html = render_html(battery, power, meta, game=LOTTO)
     out_dir.mkdir(parents=True, exist_ok=True)
     html_path = out_dir / "report.html"
     html_path.write_text(html, encoding="utf-8")

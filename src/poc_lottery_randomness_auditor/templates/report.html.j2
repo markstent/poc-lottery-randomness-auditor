@@ -37,6 +37,14 @@
       padding: 0.9rem 1rem;
       margin: 1.2rem 0 2rem;
     }
+    .key-table { width: 100%; border-collapse: collapse; margin-top: 0.6rem; }
+    .key-table th, .key-table td {
+      border-top: 1px solid #cfdcf7;
+      padding: 0.45rem 0.5rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    .key-table th { color: var(--accent); font-size: 0.86rem; }
     .era { margin-top: 2.2rem; }
     .era-head {
       display: flex;
@@ -119,6 +127,21 @@
     <p>Each check gets one chart and three plain-English notes: what the plot shows, what fair output should look like, and what pattern would worry me. A quiet report means the checks found the ordinary amount of scatter expected once the number of checks is taken into account.</p>
   </section>
 
+  {% if era_key %}
+  <section class="howto">
+    <h2>Era key</h2>
+    <p>An era is a stretch of draws played under one set of rules. Eras are audited separately because changing the pool size or draw format changes what fair looks like.</p>
+    <table class="key-table">
+      <thead><tr><th>Era</th><th>Dates</th><th>Rules</th></tr></thead>
+      <tbody>
+      {% for era in era_key %}
+        <tr><td>{{ era.name }}</td><td>{{ era.dates }}</td><td>{{ era.rules }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+
   {% for era in eras %}
   <section class="era">
     <div class="era-head">
@@ -137,7 +160,7 @@
         <div><strong>What fair looks like</strong>{{ family.fair }}</div>
         <div><strong>What would worry me</strong>{{ family.worry }}</div>
       </div>
-      <p class="verdict"><strong>Verdict</strong>{{ family.verdict }} {{ family.chance }}</p>
+      <p class="verdict"><strong>Verdict:</strong> {{ family.verdict }} {{ family.chance }}</p>
     </article>
     {% endfor %}
   </section>
